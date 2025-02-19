@@ -22,3 +22,5 @@ Per avviare la pipeline, segui questi passaggi:
 
 1. Clona il repository
 2. Dopo esserti posizionato nella cartella corretta, la prima volta avvia il progetto con docker-compose up --build
+
+Attenzione: Potrebbe essere necessario scaricare il file "spark-3.5.4-bin-hadoop3" ed inserirlo nella cartella setup all'interno della cartella spark
