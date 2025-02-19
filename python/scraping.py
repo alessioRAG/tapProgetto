@@ -13,7 +13,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 def impostaDriver():
     chrome_options = Options()
     chrome_options.add_argument('--no-sandbox')
-    chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--headless') #browser senza GUI
     chrome_options.add_argument('--disable-dev-shm-usage')
 
     # Imposta il driver con Chrome installato nel container Docker
@@ -21,13 +21,13 @@ def impostaDriver():
     print(f"Driver path: {driver_path}")
 
     service=Service(driver_path)
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver = webdriver.Chrome(service=service, options=chrome_options) # Crea un'istanza del driver
     return driver
 
 def ottieniHTML(driver, url):
     driver.get(url)
     driver.implicitly_wait(5)
-    return BeautifulSoup(driver.page_source, 'html.parser')
+    return BeautifulSoup(driver.page_source, 'html.parser') #Restituisce il codice HTML della pagina sotto forma di oggetto BeautifulSoup
 
 def salva_tabella_squadre_csv(soup, percorso):
     tabella_squadre = soup.find("table", {"id": "stats_squads_standard_for"})
@@ -47,7 +47,7 @@ def salva_tabella_giocatori_csv(soup, percorso):
     print(f"Tabelle giocatori salvate in {percorso}")
     return players_df
 
-def pulisci_tabelle_squadre(percorsoVecchio, percorsoNuovo):
+def pulisci_tabelle_squadre(percorsoVecchio, percorsoNuovo): #pulisco le tabelle dai campi che non mi servono
     path_squadre = percorsoVecchio
     df_squadre = pd.read_csv(path_squadre)
     df_squadre.to_csv(percorsoNuovo, index=False)
@@ -65,7 +65,7 @@ def pulisci_tabelle_squadre(percorsoVecchio, percorsoNuovo):
     os.remove(percorsoVecchio)
     return df_squadre
 
-def pulisci_tabelle_giocatori(percorsoVecchio, percorsoNuovo):
+def pulisci_tabelle_giocatori(percorsoVecchio, percorsoNuovo): #pulisco le tabelle dai campi che non mi servono
     path_giocatori = percorsoVecchio
     df_giocatori = pd.read_csv(path_giocatori)
     colonne_da_rimuovere = [col for col in df_giocatori.columns if "progressione" in col.lower() or "per 90 minuti" in col.lower() or "unnamed: 36" in col.lower() or "età" in col.lower()]
@@ -82,7 +82,7 @@ def pulisci_tabelle_giocatori(percorsoVecchio, percorsoNuovo):
     os.remove(percorsoVecchio)
     return df_giocatori
 
-def dataFrametoDict(df):
+def dataFrametoDict(df): #trasformo il df in un dizionario
     data = df.to_dict(orient="records")
     return data
 

@@ -1,6 +1,5 @@
 networks:
   Alessio:
-    external: true
     name: Alessio
     ipam:
       driver: default
@@ -8,12 +7,26 @@ networks:
         - subnet: 10.0.100.0/24
 
 services:
-  python-app:
+  python-app: #servizio per avviare il file di scraping, utilizzo di selenium
     build:
       context: ./python
     volumes:
       - ./python:/app
     command: python /app/scraping.py
+    networks:
+      - Alessio
+      
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.13.2
+    hostname: logstash
+    volumes:
+      - ./logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./logstash/dati:/dati
+      - ./python/datiSerieA:/datiPythonSerieA
+    stdin_open: true 
+    tty: true
+    environment:
+      XPACK_MONITORING_ENABLED: "false"
     networks:
       - Alessio
 
@@ -68,10 +81,8 @@ services:
     - |
         echo "Waiting for Kafka to be ready..." && \
         sleep 10 && \
-        kafka-topics --list --bootstrap-server kafka:9092 | grep -w "datiSquadre" && \
-        kafka-topics --delete --bootstrap-server kafka:9092 --topic datiSquadre
-        kafka-topics --list --bootstrap-server kafka:9092 | grep -w "datiGiocatori" && \
-        kafka-topics --delete --bootstrap-server kafka:9092 --topic datiGiocatori       
+        kafka-topics --delete --bootstrap-server kafka:9092 --topic datiSquadre || echo "Topic non esistente, continuando..." && \
+        kafka-topics --delete --bootstrap-server kafka:9092 --topic datiGiocatori || echo "Topic non esistente, continuando..." && \
         kafka-topics --create --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 --topic datiSquadre && \
         kafka-topics --create --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 --topic datiGiocatori && \
         echo "Topic 'datiCalcio' created."
@@ -79,42 +90,12 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
     network_mode: "service:kafka"
 
-  logstash:
-    image: docker.elastic.co/logstash/logstash:8.13.2
-    hostname: logstash
-    volumes:
-      - ./logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-      - ./logstash/dati:/dati
-      - ./python/datiSerieA:/datiPythonSerieA
-    stdin_open: true 
-    tty: true
-    environment:
-      XPACK_MONITORING_ENABLED: "false"
-    networks:
-      - Alessio
-      
-  elasticsearch:
-    hostname: elasticsearch
-    container_name: elasticsearch2
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
-    ports:
-      - "9200:9200"
-    networks:
-      Alessio:
-        ipv4_address: 10.0.100.24
-    mem_limit: 3GB
-
   spark:
     build:
       context: ./spark
       dockerfile: Dockerfile
     hostname: spark
-    container_name: spark2
+    container_name: spark
     restart: always
     volumes:
       - ./spark/code:/code
@@ -134,7 +115,7 @@ services:
       context: ./spark
       dockerfile: Dockerfile
     hostname: spark-ml
-    container_name: spark-ml2
+    container_name: spark-ml
     restart: on-failure
     depends_on:
       - spark
@@ -146,9 +127,25 @@ services:
     networks:
       - Alessio
 
+  elasticsearch:
+    hostname: elasticsearch
+    container_name: elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    ports:
+      - "9200:9200"
+    networks:
+      Alessio:
+        ipv4_address: 10.0.100.24
+    mem_limit: 3GB
+
   kibana:
     hostname: kibana
-    container_name: kibana2
+    container_name: kibana
     image: docker.elastic.co/kibana/kibana:8.13.4
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
