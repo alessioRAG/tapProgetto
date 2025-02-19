@@ -10,7 +10,7 @@ def delete_checkpoint_dir(path):
     if os.path.exists(path):
         shutil.rmtree(path)
         
-# Configurazione del Kafka e dello schema
+#Configurazione del Kafka e dello schema
 kafka_server = "PLAINTEXT://kafka:9092"
 
 """es = Elasticsearch([{'host': '10.0.100.3', 'port': 9200, 'scheme': 'http'}])
@@ -37,13 +37,13 @@ schema_giocatori = StructType([
     StructField("@timestamp", StringType(), True)
 ])
 
-# Creazione della sessione Spark
+#Creazione della sessione Spark
 spark = SparkSession.builder \
     .appName("FantaHelp") \
     .config("spark.sql.streaming.checkpointLocation", "/tmp/checkpoints") \
     .getOrCreate()
 
-# Caricamento dei dati da Kafka
+#Caricamento dei dati da Kafka
 df_squadre = spark \
     .readStream \
     .format("kafka") \
@@ -60,7 +60,7 @@ df_giocatori = spark \
     .option("startingOffsets", "earliest") \
     .load()
 
-# Conversione dei dati da Kafka in formato JSON con schema
+#Conversione dei dati da Kafka in formato JSON con schema
 df_squadre = df_squadre.selectExpr("CAST(value AS STRING) as json") \
     .select(from_json(col("json"), schema_squadre).alias("data")) \
     .select("data.*")
@@ -94,11 +94,9 @@ df_giocatori = df_giocatori.withColumnRenamed("@timestamp","giocatoriTimestamp")
 df_squadre = df_squadre.withColumn("squadreTimestamp", to_timestamp(col("squadreTimestamp")))
 df_giocatori = df_giocatori.withColumn("giocatoriTimestamp", to_timestamp(col("giocatoriTimestamp")))
 
-# Apply watermarks on event-time columns
 df_squadreWithWatermark = df_squadre.withWatermark("squadreTimestamp", "30 minutes")
 df_giocatoriWithWatermark = df_giocatori.withWatermark("giocatoriTimestamp", "30 minutes")
 
-# Join with event-time constraints
 df_giocatoriWithWatermark = df_giocatoriWithWatermark.withColumnRenamed("Squadra", "SquadraGiocatori")
 
 serving=df_squadreWithWatermark.alias("squadre").join(
@@ -121,7 +119,7 @@ if os.path.exists("/dataset/checkpoints"):
 
 """query = serving \
     .writeStream \
-    .format("json") \
+    .format("json") \   #usata per l'addestramento
     .outputMode("append") \
     .option("path", "/dataset/output_data") \
     .option("checkpointLocation", "/dataset/checkpoints") \
@@ -134,6 +132,7 @@ modelPath_assist = "/dataset/model/modello_assist_stagione"
 model_gol = PipelineModel.load(modelPath_gol)  #carico il modello
 model_assist = PipelineModel.load(modelPath_assist)  #carico il modello
 
+#applica il modello al dataset di input 
 predictDf_gol = model_gol.transform(serving).select('Giocatore','Ruolo','Squadra','Reti','xG', 'prediction_gol')
 predictDf_assist = model_assist.transform(serving).select('Giocatore','Ruolo', 'Squadra','Assist','xAG', 'prediction_assist')
 
