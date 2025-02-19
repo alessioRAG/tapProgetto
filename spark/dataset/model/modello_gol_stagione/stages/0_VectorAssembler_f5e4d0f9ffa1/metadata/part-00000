@@ -1,0 +1,1 @@
+{"class":"org.apache.spark.ml.feature.VectorAssembler","timestamp":1738864768281,"sparkVersion":"3.4.2","uid":"VectorAssembler_f5e4d0f9ffa1","paramMap":{"inputCols":["Reti","xG_per_partita"],"outputCol":"features_gol"},"defaultParamMap":{"outputCol":"VectorAssembler_f5e4d0f9ffa1__output","handleInvalid":"error"}}
