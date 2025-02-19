@@ -9,7 +9,7 @@ L'obiettivo del progetto **FantaHelp** è quello di aiutare i fantallenatori a p
 
 ## Architettura della Pipeline
 
-1. **Producer**: Simula la produzione di flussi di dati sui giocatori e le squadre, e invia i dati a Logstash.
+1. **Fber**: Sito utilizzato per ottenere i dati.
 2. **Logstash**: Sistema di ingestion dei dati per inviarli ai topic Kafka.
 3. **Kafka**: Broker di messaggi per la gestione dei flussi di dati tra i vari componenti della pipeline.
 4. **Apache Spark**: Motore di elaborazione dei dati per l'addestramento dei modelli di previsione basati su regressione lineare per i gol e gli assist attesi.
