@@ -28,11 +28,6 @@ services:
     networks:
       Alessio:
         ipv4_address: 10.0.100.22
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "2181"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -45,16 +40,10 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     depends_on:
-      zookeeper:
-        condition: service_healthy
+      - zookeeper
     networks:
       Alessio:
         ipv4_address: 10.0.100.23
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9092"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -62,8 +51,7 @@ services:
     ports:
       - 8080:8080
     depends_on:
-      kafka:
-        condition: service_healthy
+      - kafka
     environment:
       - KAFKA_CLUSTERS_0_NAME=local
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=PLAINTEXT://kafka:9092
@@ -73,16 +61,17 @@ services:
   init_kafka:
     image: confluentinc/cp-kafka:latest
     depends_on:
-      kafka:
-        condition: service_healthy
+      - kafka
     entrypoint:
     - sh
     - -c
     - |
         echo "Waiting for Kafka to be ready..." && \
         sleep 10 && \
-        kafka-topics --delete --bootstrap-server kafka:9092 --topic datiSquadre || echo "Topic non esistente, continuando..." && \
-        kafka-topics --delete --bootstrap-server kafka:9092 --topic datiGiocatori || echo "Topic non esistente, continuando..." && \
+        kafka-topics --list --bootstrap-server kafka:9092 | grep -w "datiSquadre" && \
+        kafka-topics --delete --bootstrap-server kafka:9092 --topic datiSquadre
+        kafka-topics --list --bootstrap-server kafka:9092 | grep -w "datiGiocatori" && \
+        kafka-topics --delete --bootstrap-server kafka:9092 --topic datiGiocatori       
         kafka-topics --create --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 --topic datiSquadre && \
         kafka-topics --create --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 --topic datiGiocatori && \
         echo "Topic 'datiCalcio' created."
@@ -103,7 +92,7 @@ services:
       XPACK_MONITORING_ENABLED: "false"
     networks:
       - Alessio
-
+      
   elasticsearch:
     hostname: elasticsearch
     container_name: elasticsearch2
